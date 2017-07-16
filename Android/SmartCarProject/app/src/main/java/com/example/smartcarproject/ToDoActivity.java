@@ -2,6 +2,7 @@ package com.example.smartcarproject;
 
 
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,21 +11,27 @@ import java.util.concurrent.TimeUnit;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.microsoft.windowsazure.mobileservices.MobileServiceActivityResult;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
+import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceAuthenticationProvider;
+import com.microsoft.windowsazure.mobileservices.authentication.MobileServiceUser;
 import com.microsoft.windowsazure.mobileservices.http.NextServiceFilterCallback;
 import com.microsoft.windowsazure.mobileservices.http.OkHttpClientFactory;
 import com.microsoft.windowsazure.mobileservices.http.ServiceFilter;
@@ -96,37 +103,21 @@ public class ToDoActivity extends Activity {
             mClient = new MobileServiceClient(
                     "https://smartcarproject.azurewebsites.net",
                     this).withFilter(new ProgressFilter());
-
             // Extend timeout from default of 10s to 20s
             mClient.setAndroidHttpClientFactory(new OkHttpClientFactory() {
                 @Override
                 public OkHttpClient createOkHttpClient() {
                     OkHttpClient client = new OkHttpClient();
-                    client.setReadTimeout(20, TimeUnit.SECONDS);
-                    client.setWriteTimeout(20, TimeUnit.SECONDS);
+                    client.setReadTimeout(60, TimeUnit.SECONDS);
+                    client.setWriteTimeout(60, TimeUnit.SECONDS);
                     return client;
                 }
             });
-
-            // Get the Mobile Service Table instance to use
-
-            mToDoTable = mClient.getTable(ToDoItem.class);
-
-            // Offline Sync
-            //mToDoTable = mClient.getSyncTable("ToDoItem", ToDoItem.class);
-
             //Init local storage
             initLocalStore().get();
 
-            mTextNewToDo = (EditText) findViewById(R.id.textNewToDo);
+            authenticate();
 
-            // Create an adapter to bind the items with the view
-            mAdapter = new ToDoItemAdapter(this, R.layout.row_list_to_do);
-            ListView listViewToDo = (ListView) findViewById(R.id.listViewToDo);
-            listViewToDo.setAdapter(mAdapter);
-
-            // Load the items from the Mobile Service
-            refreshItemsFromTable();
 
         } catch (MalformedURLException e) {
             createAndShowDialog(new Exception("There was an error creating the Mobile Service. Verify the URL"), "Error");
@@ -135,9 +126,69 @@ public class ToDoActivity extends Activity {
         }
     }
 
-    /**
-     * Initializes the activity menu
-     */
+    private void createTable() {
+
+        // Get the Mobile Service Table instance to use
+
+        mToDoTable = mClient.getTable(ToDoItem.class);
+
+        // Offline Sync
+        //mToDoTable = mClient.getSyncTable("ToDoItem", ToDoItem.class);
+
+        mTextNewToDo = (EditText) findViewById(R.id.textNewToDo);
+
+        // Create an adapter to bind the items with the view
+        mAdapter = new ToDoItemAdapter(this, R.layout.row_list_to_do);
+        ListView listViewToDo = (ListView) findViewById(R.id.listViewToDo);
+        listViewToDo.setAdapter(mAdapter);
+
+        // Load the items from the Mobile Service
+        refreshItemsFromTable();
+    }
+
+    // You can choose any unique number here to differentiate auth providers from each other. Note this is the same code at login() and onActivityResult().
+    public static final int GOOGLE_LOGIN_REQUEST_CODE = 1;
+
+    private void authenticate() {
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("access_type", "offline");
+
+        // Login using the Google provider.
+        mClient.login(MobileServiceAuthenticationProvider.Google, "smartcarproject", GOOGLE_LOGIN_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        MobileServiceActivityResult r =mClient.onActivityResult(data);
+        mClient.createConnection();
+
+        Log.d("OnActivityResult :", "requestCode value =" + requestCode);
+        Log.d("OnActivityResult :", "resultCode value =" + resultCode);
+        // When request completes
+        if (resultCode == RESULT_OK) {
+            // Check the request code matches the one we send in the login request
+            if (requestCode == GOOGLE_LOGIN_REQUEST_CODE) {
+                MobileServiceActivityResult result = mClient.onActivityResult(data);
+                if (result.isLoggedIn()) {
+                    // login succeeded
+                    createAndShowDialog(String.format("You are now logged in - %1$2s", mClient.getCurrentUser().getUserId()), "Success");
+                    createTable();
+                } else {
+                    // login failed, check the error message
+                    String errorMessage = result.getErrorMessage();
+                    createAndShowDialog(errorMessage, "Error");
+                }
+            }
+        }
+    }
+    @Override public void onStop() { super.onStop();}
+
+
+
+        /**
+         * Initializes the activity menu
+         */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
