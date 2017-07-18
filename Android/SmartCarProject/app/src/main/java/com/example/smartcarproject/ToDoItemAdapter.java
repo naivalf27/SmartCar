@@ -8,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 
+import com.example.smartcarproject.Activities.ToDoActivity;
+
 /**
  * Adapter to bind a ToDoItem List to a view
  */
