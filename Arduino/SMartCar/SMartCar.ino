@@ -28,10 +28,19 @@ int prevGo = 0;
 int extremLeft = 60;
 int extremRight = 105;
 
+int detecteurDroit = 6;
+int detecteurGauche = 9;
+int isObstaclGauche = HIGH;
+int isObstaclDroite = HIGH;
+
 char recd_dat;
 
 void setup() {
   Serial.begin(9600);
+
+  
+//  pinMode(detecteurGauche, INPUT);
+//  pinMode(detecteurDroit, INPUT);
   	
   //pinMode(APWM,OUTPUT);
   //pinMode(BPWM,OUTPUT);
@@ -47,11 +56,26 @@ void setup() {
 }
 
 void loop() {
+
+//  Serial.println(digitalRead(detecteurGauche));
+//  isObstaclGauche = digitalRead(detecteurGauche);
+//  isObstaclDroite = digitalRead(detecteurDroit);
+//  if (isObstaclGauche == LOW || isObstaclDroite == LOW)
+//  {
+//    Serial.println("OBSTACLE!!, OBSTACLE!!");
+//  }
+//  else
+//  {
+//    Serial.println("clear");
+//  }
+  
+//  Serial.println (digitalRead(detecteurGauche)); 
   if( Serial.available() ) {
+    Serial.println("toto");
     recd_dat = Serial.read();
     Serial.println(recd_dat);
   }
-  delay(150);
+  delay(500);
   
 //int go = 0;
 
