@@ -29,6 +29,10 @@ import android.widget.TextView;
 import com.example.smartcarproject.R;
 import com.example.smartcarproject.ToDoItem;
 import com.example.smartcarproject.ToDoItemAdapter;
+import com.example.smartcarproject.adapter.CommandAdapter;
+import com.example.smartcarproject.fragments.CommandFragment;
+import com.example.smartcarproject.fragments.DashBoardFragment;
+import com.example.smartcarproject.models.Command;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -68,7 +72,7 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
     /**
      * Mobile Service Table used to access data
      */
-    private MobileServiceTable<ToDoItem> mToDoTable;
+    private MobileServiceTable<Command> mCommandTable;
 
     //Offline Sync
     /**
@@ -79,33 +83,16 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
     /**
      * Adapter to sync the items list with the view
      */
-    private ToDoItemAdapter mAdapter;
+    private CommandAdapter mCommandAdapter;
 
-    /**
-     * EditText containing the "New To Do" text
-     */
-    private EditText mTextNewToDo;
 
-    /**
-     * Progress spinner to use for table operations
-     */
-    private ProgressBar mProgressBar;
-
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v13.app.FragmentStatePagerAdapter}.
-     */
     private SectionsPagerAdapter mSectionsPagerAdapter;
 
     /**
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
-
+    public int SectionNum;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -166,7 +153,6 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
 
             authenticate();
 
-
         } catch (MalformedURLException e) {
             createAndShowDialog(new Exception("There was an error creating the Mobile Service. Verify the URL"), "Error");
         } catch (Exception e){
@@ -213,42 +199,6 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-
-            return rootView;
-        }
-    }
-
     private void createTable() {
         // Get the Mobile Service Table instance to use
         mToDoTable = mClient.getTable(ToDoItem.class);
@@ -256,10 +206,9 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         // Offline Sync
         //mToDoTable = mClient.getSyncTable("ToDoItem", ToDoItem.class);
 
-        mTextNewToDo = (EditText) findViewById(R.id.textNewToDo);
 
         // Create an adapter to bind the items with the view
-        mAdapter = new ToDoItemAdapter(this, R.layout.row_list_to_do);
+        mCommandAdapter = new CommandAdapter(this, R.layout.cardview_command);
         ListView listViewToDo = (ListView) findViewById(R.id.listViewToDo);
         listViewToDo.setAdapter(mAdapter);
 
@@ -294,7 +243,7 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
                 if (result.isLoggedIn()) {
                     // login succeeded
                     createAndShowDialog(String.format("You are now logged in - %1$2s", mClient.getCurrentUser().getUserId()), "Success");
-                    //createTable();
+                    createTable();
                 } else {
                     // login failed, check the error message
                     String errorMessage = result.getErrorMessage();
@@ -315,10 +264,11 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         }
 
         @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+        public Fragment getItem(int pos) {
+            switch(pos) {
+                case 1: return DashBoardFragment.newInstance();
+                default: return CommandFragment.newInstance();
+            }
         }
 
         @Override
