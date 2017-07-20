@@ -24,7 +24,7 @@ public class SplashScreenActivity extends Activity {
             @Override
             public void run() {
 
-                    i = new Intent(SplashScreenActivity.this, DeviceListActivity.class);
+                    i = new Intent(SplashScreenActivity.this, MainActivity.class);
 
                 startActivity(i);
                 overridePendingTransition(R.animator.slide_from_right, R.animator.slide_to_left);
