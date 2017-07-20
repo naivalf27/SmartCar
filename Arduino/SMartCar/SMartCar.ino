@@ -1,196 +1,195 @@
 // include the library code:
 #include <Servo.h>
- 
+#include <SoftwareSerial.h>
+
+SoftwareSerial btSerial(5, 10); // RX/TX pins
 Servo myservo;  // create servo object to control a servo 
-                // a maximum of eight servo objects can be created 
- 
-int pos = 65;    // variable to store the servo position
-int delta = 1;
+// a maximum of eight servo objects can be created 
 
-//int PINSW = 10;
-int PINDIR = 5;
+int pinSensorLeft = 9;
+int pinSensorRight = 6;
 
-int BPWM = 11;
-int BDIR = 13;
+int pinSensorFace = A1;// ancien A1
+int distanceRange = 60;
 
-int APWM = 3;
-int ADIR = 12;
 
-int vitesse = 100;
-int nbCycle = 0;
-int distance;
-int filterDist[5];
-int indxDist = 6;
-int moyDist;
-int minDist;
-int prevGo = 0;
-
+int pinServo = 5;
 int extremLeft = 60;
 int extremRight = 105;
 
-int detecteurDroit = 6;
-int detecteurGauche = 9;
-int isObstaclGauche = HIGH;
-int isObstaclDroite = HIGH;
+int pinMotorLeftPower = 3;
+int pinMotorLeftDirection = 12;
+int pinMotorRightPower = 11;
+int pinMotorRightDirection = 13;
 
-char recd_dat;
 
 void setup() {
   Serial.begin(9600);
+  btSerial.begin(9600);
 
-  
-//  pinMode(detecteurGauche, INPUT);
-//  pinMode(detecteurDroit, INPUT);
-  	
-  //pinMode(APWM,OUTPUT);
-  //pinMode(BPWM,OUTPUT);
-  //pinMode(ADIR,OUTPUT);
-  //pinMode(BDIR,OUTPUT);
-  
-  //pinMode(PINSW,INPUT);
-  
-  //myservo.attach(5);  // attaches the servo on pin 5 to the servo object 
-  //Stop();
-  //nbCycle = 0;
+  initCapteurLateraux();
+  initSensorDistance();
+  initServo();
+  initMotor();
   
 }
-
 void loop() {
+  loopBluetooth();
+  //loopCapteurLateraux();
+  loopServo();
+  //loopMotor();
 
-//  Serial.println(digitalRead(detecteurGauche));
-//  isObstaclGauche = digitalRead(detecteurGauche);
-//  isObstaclDroite = digitalRead(detecteurDroit);
-//  if (isObstaclGauche == LOW || isObstaclDroite == LOW)
-//  {
-//    Serial.println("OBSTACLE!!, OBSTACLE!!");
+  float prct = getSensorDistance();
+
+  String s = "% = ";
+  s += String(prct);
+
+  Serial.println(s);
+
+//  if (cm < 5) {
+//    turn(100);
+//    goBackward(70);
+//  } else {
+//    goForward(100);
 //  }
-//  else
-//  {
-//    Serial.println("clear");
-//  }
   
-//  Serial.println (digitalRead(detecteurGauche)); 
-  if( Serial.available() ) {
-    Serial.println("toto");
-    recd_dat = Serial.read();
-    Serial.println(recd_dat);
-  }
-  delay(500);
-  
-//int go = 0;
-
-//  minDistance();
-  //go = digitalRead(PINSW);
-  
-//  goBackward(vitesse);
-//  turn(50);
-  
-//  //oscillateDir();
-//  if (prevGo == HIGH && nbCycle > 25)
-//  {
-//	
-//	
-//	Serial.print("-------------");
-//    Serial.println(minDist);
-//    if (minDist < 29)
-//    {
-//      //myservo.write(75);
-//      goBackward(vitesse);
-//    }
-//    else
-//    {
-//      goForward(vitesse + 10);
-//    }
-//    nbCycle = 0;
-//    minDist = 200;
-//	  
-//  }
-//  nbCycle++;
-
-
-//  delay(20);
 }
 
-/////////////////////////////////////////////////////////
 
-int meanDistance()
-{
-  distance = analogRead(A1);
-  
-  if (indxDist <=4)
-  {
-    filterDist[indxDist] = distance;
-    indxDist++;
-  }
-  else
-  {
-    filterDist[0] = distance;
-    indxDist = 1;
-  }
-  
-  moyDist = 0;
-  for (int i=0; i<5; i++)
-  {
-     moyDist += filterDist[i];
-  }
-  moyDist = moyDist/5;
+// ---------------------MOTOR--------------------- \\
+
+void initMotor(){
+  pinMode(pinMotorLeftPower, OUTPUT);
+  pinMode(pinMotorRightPower, OUTPUT);
+  pinMode(pinMotorLeftDirection, OUTPUT);
+  pinMode(pinMotorRightDirection, OUTPUT);
+
+  stopMotor();
 }
 
-// -------------------------------------------------
-int minDistance()
-{
-  distance = analogRead(A1);
-  
-  if (distance < minDist)
-  {
-    minDist = distance;
-  }
+void loopMotor(){
+  goForward(100);
 }
 
-// ---------------------------------------------------
-void turn(int angle){
-  int prctMax = extremRight - extremLeft;
-  int res = (prctMax * angle / 100) + extremLeft;
-   Serial.println(res);
-   myservo.write(res); 
-}
-// ---------------------------------------------------
-void oscillateDir()
-{
-  myservo.write(pos);              // tell servo to go to position in variable 'pos' 
-  pos += delta;
-  if ( pos > 105)  // goes from 0 degrees to 180 degrees 
-  {                                  // in steps of 1 degree 
-    delta = -1;
-  } 
-  if (pos < 65)     // goes from 180 degrees to 0 degrees 
-  {                                
-    delta = 1;
-  }
-}
-
-// ---------------------------------------------------
-void Stop()
-{
-  analogWrite(APWM, 0);
-  analogWrite(BPWM, 0);
-}
-
-// ---------------------------------------------------
 void goForward(int speed)
 {
-  digitalWrite(ADIR, 1);
-  analogWrite(APWM, speed);
-  digitalWrite(BDIR, 0);
-  analogWrite(BPWM, speed); 
+  digitalWrite(pinMotorLeftDirection, 1);
+  analogWrite(pinMotorLeftPower, speed);
+  digitalWrite(pinMotorRightDirection, 0);
+  analogWrite(pinMotorRightPower, speed); 
 }
 
-// ---------------------------------------------------
+void stopMotor()
+{
+  analogWrite(pinMotorLeftPower, 0);
+  analogWrite(pinMotorRightPower, 0);
+}
+
 void goBackward(int speed)
 {
-  digitalWrite(ADIR, 0);
-  analogWrite(APWM, speed);
-  digitalWrite(BDIR, 1);
-  analogWrite(BPWM, speed); 
+  digitalWrite(pinMotorLeftDirection, 0);
+  analogWrite(pinMotorLeftPower, speed);
+  digitalWrite(pinMotorRightDirection, 1);
+  analogWrite(pinMotorRightPower, speed); 
+}
+// ------------------MOTOR SERVO------------------ \\
+void loopServo(){
+  turn(50);
+}
+
+void initServo(){
+  myservo.attach(5);
+}
+
+void turn(int prct){ // 0% == left, 50% == face, 100% == right
+  if (prct > 100){
+    prct = 100;
+  } else if (prct < 0) {
+    prct = 0;
+  }
+  
+  int valueMax = extremRight - extremLeft;
+  int res = (prct * valueMax / 100) + extremLeft;
+  myservo.write(res); 
+}
+
+
+// ---------------SENSOR DISTANCE--------------- \\
+void initSensorDistance(){
+  pinMode(A1, INPUT);
+}
+
+float getSensorDistance(){
+  float sum = 0;
+  for (int i = 0; i < distanceRange ; i++){
+    float anVolt = analogRead(pinSensorFace);
+    sum += anVolt;
+    delay(10);
+  }
+
+  float min = 27.9;
+  float max = 34.3;
+
+  float inches = sum / distanceRange;
+
+  float range = max - min;
+  float prc = inches - min;
+
+  prc = ((prc * 100) / range);
+  sendMessage("front:"+String(prc));
+  return prc;
+}
+
+
+// ----------------SENSOR LATERAUX---------------- \\
+void loopCapteurLateraux(){
+  int detectLeft = digitalRead(pinSensorLeft);
+  int detectRight = digitalRead(pinSensorRight);
+
+  if (detectLeft == LOW){
+    Serial.println("LEFT :: OBSTACLE!!");
+    sendMessage("left:1");
+  }
+
+  if (detectRight == LOW){
+    Serial.println("RIGHT :: OBSTACLE!!");
+    sendMessage("right:1");
+  }
+}
+
+void initCapteurLateraux(){
+  pinMode(pinSensorLeft, INPUT);
+  pinMode(pinSensorRight, INPUT);
+}
+
+
+// --------------------BLUETOOTH-------------------- \\
+void loopBluetooth(){
+  String msg = getMessage();
+    if(msg!=""){
+      Serial.println(msg);
+    }
+ 
+    // Send the text you entered in the input field of the Serial Monitor to the HC-06
+    if(Serial.available()){
+      btSerial.write(Serial.read());
+    }
+}
+
+void sendMessage(String msg){
+  btSerial.println(msg);
+}
+
+String getMessage(){
+  String msg = "";
+  char a;
+  
+  while(btSerial.available()) {
+    Serial.println("test");
+      a = btSerial.read();
+      btSerial.println(String(a));
+      msg+=String(a);
+  }
+  return msg;
 }
 
