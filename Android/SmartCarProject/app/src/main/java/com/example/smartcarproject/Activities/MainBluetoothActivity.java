@@ -133,25 +133,6 @@ public class MainBluetoothActivity extends Activity {
         }
     }
 
-//  @Override
-//  public void onPause() {
-//    super.onPause();
-//
-////    if (outStream != null) {
-////      try {
-////        outStream.flush();
-////      } catch (IOException e) {
-////        errorExit("Fatal Error", "In onPause() and failed to flush output stream: " + e.getMessage() + ".");
-////      }
-////    }
-//
-//    try     {
-//      btSocket.close();
-//    } catch (IOException e2) {
-//      errorExit("Fatal Error", "In onPause() and failed to close socket." + e2.getMessage() + ".");
-//    }
-//  }
-
     private void checkBTState() {
         // Check for Bluetooth support and then check to make sure it is turned on
 

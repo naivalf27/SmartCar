@@ -6,10 +6,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import com.example.smartcarproject.R;
-import com.example.smartcarproject.models.Command;
+import com.example.smartcarproject.models.Actions;
 
 import java.util.List;
 
@@ -17,30 +18,30 @@ import java.util.List;
  * Created by Remi on 19/07/2017.
  */
 
-public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.ViewHolder> {
+public class ActionsAdapter extends RecyclerView.Adapter<ActionsAdapter.ViewHolder> {
 
-    List<Command> listCommandItem;
+    List<Actions> listCommandItem;
     int rowLayout;
 
-    public CommandAdapter(List<Command> items, int row) {
+    public ActionsAdapter(List<Actions> items, int row) {
         listCommandItem = items;
         this.rowLayout = row;
     }
 
     @Override
-    public CommandAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ActionsAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.cardview_command, parent, false);
-        return new CommandAdapter.ViewHolder(view);
+        return new ActionsAdapter.ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
-        holder.mIdView.setText(listCommandItem.get(position).getId());
-        holder.mCountView.setText(listCommandItem.get(position).getCount());
-        holder.mDateView.setText(listCommandItem.get(position).getDate().toString());
-        holder.mTypeView.setText(listCommandItem.get(position).getType());
-
+        holder.mIdView.setText(listCommandItem.get(position).getmId());
+        String count = String.valueOf(listCommandItem.get(position).getmName());
+        holder.mCountView.setText(count);
+        String type = String.valueOf(listCommandItem.get(position).getmValue());
+        holder.mTypeView.setText(type);
     }
 
     @Override
@@ -68,6 +69,16 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.ViewHold
             mCountView = (TextView) view.findViewById(R.id.countCommand);
             mTypeView = (TextView) view.findViewById(R.id.typeCommand);
         }
+    }
+
+    public void add(Actions item) {
+        listCommandItem.add(item); // on insère le nouvel objet dans notre       liste d'article lié à l'adapter
+        this.notifyDataSetChanged(); // on notifie à l'adapter ce changement
+    }
+
+    public void clear() {
+        listCommandItem.clear(); // on insère le nouvel objet dans notre       liste d'article lié à l'adapter
+        this.notifyDataSetChanged(); // on notifie à l'adapter ce changement
     }
 
     @Override

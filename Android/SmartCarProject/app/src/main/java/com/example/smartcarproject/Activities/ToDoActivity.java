@@ -268,43 +268,7 @@ public class ToDoActivity extends Activity {
      * @param view
      *            The view that originated the call
      */
-    public void addItem(View view) {
-        if (mClient == null) {
-            return;
-        }
 
-        // Create a new item
-        final ToDoItem item = new ToDoItem();
-
-        item.setText(mTextNewToDo.getText().toString());
-        item.setComplete(false);
-
-        // Insert the new item
-        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>(){
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    final ToDoItem entity = addItemInTable(item);
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(!entity.isComplete()){
-                                mAdapter.add(entity);
-                            }
-                        }
-                    });
-                } catch (final Exception e) {
-                    createAndShowDialogFromTask(e, "Error");
-                }
-                return null;
-            }
-        };
-
-        runAsyncTask(task);
-
-        mTextNewToDo.setText("");
-    }
 
     /**
      * Add an item to the Mobile Service Table
