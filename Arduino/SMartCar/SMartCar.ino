@@ -46,12 +46,12 @@ void loop() {
 
   Serial.println(s);
 
-//  if (cm < 5) {
-//    turn(100);
-//    goBackward(70);
-//  } else {
-//    goForward(100);
-//  }
+  if (prct < 30) {
+    turn(50);
+    goBackward(70);
+  } else {
+    goForward(200);
+  }
   
 }
 
@@ -136,7 +136,9 @@ float getSensorDistance(){
   float prc = inches - min;
 
   prc = ((prc * 100) / range);
-  sendMessage("front:"+String(prc));
+  if (prc < 30){
+    sendMessage("front:"+String(prc));
+  }
   return prc;
 }
 

@@ -8,9 +8,15 @@ import android.app.FragmentTransaction;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -32,6 +38,7 @@ import android.widget.TextView;
 import com.example.smartcarproject.R;
 import com.example.smartcarproject.ToDoItem;
 import com.example.smartcarproject.ToDoItemAdapter;
+import com.example.smartcarproject.fragments.AddAction;
 import com.example.smartcarproject.fragments.CommandFragment;
 import com.example.smartcarproject.fragments.DashBoardFragment;
 import com.example.smartcarproject.models.Actions;
@@ -67,31 +74,22 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import me.aflak.bluetooth.Bluetooth;
+
 import static com.microsoft.windowsazure.mobileservices.table.query.QueryOperations.val;
 
-public class MainActivity extends Activity implements ActionBar.TabListener {
+public class MainActivity extends Activity implements ActionBar.TabListener, Bluetooth.CommunicationCallback {
 
-    /**
-     * Mobile Service Client reference
-     */
     public static MobileServiceClient mClient;
 
-    /**
-     * Mobile Service Table used to access data
-     */
-
-
-    //Offline Sync
-    /**
-     * Mobile Service Table used to access and Sync data
-     */
-    //private MobileServiceSyncTable<ToDoItem> mToDoTable;
-
-    //private List<Command> mListCommand;
-
-    private RecyclerView.LayoutManager mLayoutManager;
+    private Bluetooth bluetooth;
 
     private SectionsPagerAdapter mSectionsPagerAdapter;
+    MobileServiceTable<Actions> mCommandTable;
+
+    private boolean registered=false;
+
+    public AddAction addAction;
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -102,6 +100,18 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        bluetooth = new Bluetooth(this);
+        bluetooth.enableBluetooth();
+
+        bluetooth.setCommunicationCallback(this);
+
+        String name = bluetooth.getPairedDevices().get(0).getName();
+        bluetooth.connectToDevice(bluetooth.getPairedDevices().get(0));
+
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        registerReceiver(mReceiver, filter);
+        registered=true;
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -164,6 +174,55 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         } catch (Exception e){
             createAndShowDialog(e, "Error");
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(registered) {
+            unregisterReceiver(mReceiver);
+            registered=false;
+        }
+    }
+
+    @Override
+    public void onConnect(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onMessage(String message) {
+            Actions a = new Actions();
+            a.setmId(String.valueOf(new Date().getTime()));
+            a.setmName(message.split(":")[0]);
+            a.setmValue(message.split(":")[1]);
+            addItem(a);
+    }
+
+    @Override
+    public void onError(String message) {
+
+    }
+
+    @Override
+    public void onConnectError(final BluetoothDevice device, String message) {
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        b.connectToDevice(device);
+//                    }
+//                }, 2000);
+//            }
+//        });
+    }
+
+    @Override
+    public void onDisconnect(BluetoothDevice device, String message) {
+        bluetooth.connectToDevice(device);
     }
 
     @Override
@@ -230,6 +289,7 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
                 if (result.isLoggedIn()) {
                     // login succeeded
                     createAndShowDialog(String.format("You are now logged in - %1$2s", mClient.getCurrentUser().getUserId()), "Success");
+                    mCommandTable = MainActivity.mClient.getTable(Actions.class);
                 } else {
                     // login failed, check the error message
                     String errorMessage = result.getErrorMessage();
@@ -275,16 +335,40 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         }
     }
 
+    public Actions addCommandItemInTable(Actions item) throws ExecutionException, InterruptedException {
+        Actions c = mCommandTable.insert(item).get();
+        return c;
+    }
+
+    public void addItem(final Actions c) {
+        if (MainActivity.mClient == null) {
+            return;
+        }
 
 
-    /**
-     * Creates a dialog and shows it
-     *
-     * @param exception
-     *            The exception to show in the dialog
-     * @param title
-     *            The dialog title
-     */
+        // Insert the new item
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>(){
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    final Actions entity = addCommandItemInTable(c);
+
+//                    ((MainActivity) getActivity()).runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            commandAdapter.add(entity);
+//                        }
+//                    });
+                } catch (final Exception e) {
+                    createAndShowDialogFromTask(e, "Error");
+                }
+                return null;
+            }
+        };
+
+        runAsyncTask(task);
+    }
+
     public void createAndShowDialogFromTask(final Exception exception, String title) {
         runOnUiThread(new Runnable() {
             @Override
@@ -294,15 +378,6 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         });
     }
 
-
-    /**
-     * Creates a dialog and shows it
-     *
-     * @param exception
-     *            The exception to show in the dialog
-     * @param title
-     *            The dialog title
-     */
     public void createAndShowDialog(Exception exception, String title) {
         Throwable ex = exception;
         if(exception.getCause() != null){
@@ -311,14 +386,6 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         createAndShowDialog(ex.getMessage(), title);
     }
 
-    /**
-     * Creates a dialog and shows it
-     *
-     * @param message
-     *            The dialog message
-     * @param title
-     *            The dialog title
-     */
     private void createAndShowDialog(final String message, final String title) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -327,9 +394,42 @@ public class MainActivity extends Activity implements ActionBar.TabListener {
         builder.create().show();
     }
 
-    /**
-     * Run an ASync task on the corresponding executor
-     * @param task
-     * @return
-     */
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                Intent intent1 = new Intent(MainActivity.this, Select.class);
+
+                switch (state) {
+                    case BluetoothAdapter.STATE_OFF:
+                        if(registered) {
+                            unregisterReceiver(mReceiver);
+                            registered=false;
+                        }
+//                        startActivity(intent1);
+//                        finish();
+                        break;
+                    case BluetoothAdapter.STATE_TURNING_OFF:
+                        if(registered) {
+                            unregisterReceiver(mReceiver);
+                            registered=false;
+                        }
+//                        startActivity(intent1);
+//                        finish();
+                        break;
+                }
+            }
+        }
+    };
+
+    private AsyncTask<Void, Void, Void> runAsyncTask(AsyncTask<Void, Void, Void> task) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            return task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            return task.execute();
+        }
+    }
 }

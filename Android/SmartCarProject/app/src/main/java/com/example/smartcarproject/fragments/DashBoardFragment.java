@@ -64,12 +64,8 @@ public class DashBoardFragment extends Fragment{
 
         mCommandTable = MainActivity.mClient.getTable(Actions.class);
 
-        Actions c = new Actions("id", "action1", "value 1");
-
-        addItem(c);
-
         recyclerViewCommand = (RecyclerView) v.findViewById(R.id.recycleViewCommands);
-        recyclerViewCommand.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewCommand.setLayoutManager(new LinearLayoutManager(getActivity().getApplicationContext()));
         commandAdapter = new ActionsAdapter(new ArrayList<Actions>(), R.layout.cardview_command);
         recyclerViewCommand.setAdapter(commandAdapter);
         //RealmResults<News> results = realm.where(News.class).findAll();
@@ -78,6 +74,12 @@ public class DashBoardFragment extends Fragment{
         commandAdapter.notifyDataSetChanged();
         return v;
 
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshCommandItemsFromTable();
     }
 
     /**
@@ -138,34 +140,5 @@ public class DashBoardFragment extends Fragment{
     public Actions addCommandItemInTable(Actions item) throws ExecutionException, InterruptedException {
         Actions c = mCommandTable.insert(item).get();
         return c;
-    }
-
-    public void addItem(final Actions c) {
-        if (MainActivity.mClient == null) {
-            return;
-        }
-
-
-        // Insert the new item
-        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>(){
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    final Actions entity = addCommandItemInTable(c);
-
-                    ((MainActivity) getActivity()).runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            commandAdapter.add(entity);
-                        }
-                    });
-                } catch (final Exception e) {
-                    ((MainActivity) getActivity()).createAndShowDialogFromTask(e, "Error");
-                }
-                return null;
-            }
-        };
-
-        runAsyncTask(task);
     }
 }

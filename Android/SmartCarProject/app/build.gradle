@@ -4,7 +4,7 @@ android {
     buildToolsVersion '25.0.0'
     defaultConfig {
         applicationId "com.example.smartcarproject"
-        minSdkVersion 23
+        minSdkVersion 19
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
@@ -32,6 +32,8 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.google.code.gson:gson:2.3'
     compile 'com.google.guava:guava:18.0'
+    compile 'me.aflak.libraries:bluetooth:1.2.4'
+    compile 'me.aflak.libraries:pulltorefresh:1.0'
     compile 'com.squareup.okhttp:okhttp:2.5.0'
     compile 'com.microsoft.azure:azure-mobile-android:3.3.0@aar'
     compile 'com.microsoft.azure:azure-notifications-handler:1.0.1@jar'
